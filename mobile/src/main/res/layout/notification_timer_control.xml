@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/timerTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Timer is running" />
+
+    <ImageView
+        android:id="@+id/cancelButton"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:padding="4dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:src="@drawable/ic_baseline_cancel_24" />
+
+    <LinearLayout
+        android:id="@+id/actionButton"
+        android:layout_width="80dp"
+        android:gravity="center_vertical"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/timerTitle"
+        android:layout_marginTop="8dp">
+
+        <ImageView
+            android:id="@+id/actionButtonImage"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="4dp"
+            android:layout_marginEnd="8dp"
+            android:src="@drawable/ic_baseline_stop_circle_24" />
+
+        <TextView
+            android:id="@+id/actionButtonTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Stop" />
+    </LinearLayout>
+
+</RelativeLayout>
