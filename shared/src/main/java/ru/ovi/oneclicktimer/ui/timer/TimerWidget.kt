@@ -2,15 +2,19 @@ package ru.ovi.oneclicktimer.ui.timer
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.VerticalAlignmentLine
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import kotlinx.coroutines.InternalCoroutinesApi
+import ru.ovi.oneclicktimer.ui.timerpicker.TIME_SLOTS
 import ru.ovi.oneclicktimer.ui.timerpicker.TimerPicker
 import ru.ovi.oneclicktimer.ui.utils.timerFormat
 
@@ -21,12 +25,17 @@ fun TimerWidget(
     viewModel: TimerViewModel = viewModel()
 ) {
     val timerState by viewModel.timerState.collectAsState()
+
     Column(
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (timerState == TimerState.IDLE) {
-            TimerPicker(viewModel.timerPickerIndex, viewModel::timerChanged)
+            val selectedTimerDuration by viewModel.timerDuration.collectAsState()
+            selectedTimerDuration?.let {
+                TimerPicker(it, viewModel::timerChanged)
+            }
         } else {
             val tick by viewModel.ticks.collectAsState(initial = 0)
             Text(text = timerFormat(tick))

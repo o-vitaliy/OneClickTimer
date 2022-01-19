@@ -9,9 +9,8 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
-import ru.ovi.oneclicktimer.R
-import ru.ovi.oneclicktimer.ui.TimerActivity
 import ru.ovi.oneclicktimer.ui.utils.timerFormat
+import ru.ovi.shared.R
 
 class TimerService : Service() {
 
@@ -109,13 +108,18 @@ class TimerService : Service() {
         }
 
 
-        val channelId = createNotificationChannel()
+        val channelId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel()
+        } else {
+            ""
+        }
 
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_baseline_timer_24)
             .setContent(remoteView)
 
-        val resultIntent = Intent(this, TimerActivity::class.java)
+        val resultIntent = Intent(Intent.ACTION_MAIN)
+            .setPackage(packageName)
         val resultPendingIntent = PendingIntent.getActivity(
             this, 0, resultIntent,
             PendingIntent.FLAG_UPDATE_CURRENT
@@ -154,13 +158,18 @@ class TimerService : Service() {
     )
 
     private fun vibrateDevice() {
-        val vibrator = getSystemService( Vibrator::class.java)
+        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         vibrator?.let {
             if (Build.VERSION.SDK_INT >= 26) {
-                it.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+                it.vibrate(
+                    VibrationEffect.createOneShot(
+                        VIBRATION_DURATION,
+                        VibrationEffect.DEFAULT_AMPLITUDE
+                    )
+                )
             } else {
                 @Suppress("DEPRECATION")
-                it.vibrate(100)
+                it.vibrate(VIBRATION_DURATION)
             }
         }
     }
@@ -174,5 +183,7 @@ class TimerService : Service() {
         private const val ACTION_STOP = "ACTION_STOP"
         private const val ACTION_START = "ACTION_START"
         private const val ACTION_CANCEL = "ACTION_CANCEL"
+
+        private const val VIBRATION_DURATION = 200L
     }
 }

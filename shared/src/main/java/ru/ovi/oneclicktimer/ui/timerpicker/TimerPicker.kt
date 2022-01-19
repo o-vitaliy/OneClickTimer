@@ -1,5 +1,6 @@
 package ru.ovi.oneclicktimer.ui.timerpicker
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Card
 import androidx.compose.material.Text
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
@@ -26,8 +28,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.absoluteValue
 
 val TIME_SLOTS = arrayOf(
-    TimeUnit.SECONDS.toMillis(3),
-    TimeUnit.SECONDS.toMillis(15),
     TimeUnit.SECONDS.toMillis(30),
     TimeUnit.SECONDS.toMillis(45),
     TimeUnit.SECONDS.toMillis(60),
@@ -35,15 +35,20 @@ val TIME_SLOTS = arrayOf(
     TimeUnit.SECONDS.toMillis(120),
 )
 
+val TIME_SLOTS_DEFAULT = TIME_SLOTS.first()
+
 @InternalCoroutinesApi
 @ExperimentalPagerApi
 @Composable
-fun TimerPicker(currentPage: Int = 0, onSelected: ((Int, Long) -> Unit)? = null) {
-    val pagerState = rememberPagerState(initialPage = currentPage)
-
+fun TimerPicker(
+    currentValue: Long = TIME_SLOTS_DEFAULT,
+    onSelected: ((Long) -> Unit)? = null
+) {
+    val pagerState = rememberPagerState(initialPage = TIME_SLOTS.indexOf(currentValue))
+    val paddingValues = getPaddingValues(LocalConfiguration.current)
     HorizontalPager(
         count = TIME_SLOTS.size, state = pagerState,
-        contentPadding = PaddingValues(horizontal = 120.dp),
+        contentPadding = PaddingValues(horizontal = paddingValues.dp),
     ) { page ->
         TimerItem(TIME_SLOTS[page], calculateCurrentOffsetForPage(page).absoluteValue)
     }
@@ -51,16 +56,29 @@ fun TimerPicker(currentPage: Int = 0, onSelected: ((Int, Long) -> Unit)? = null)
     LaunchedEffect(pagerState) {
         // Collect from the a snapshotFlow reading the currentPage
         snapshotFlow { pagerState.currentPage }.collect { page ->
-            onSelected?.invoke(page, TIME_SLOTS[page])
+            onSelected?.invoke(TIME_SLOTS[page])
         }
     }
+}
+
+private fun getPaddingValues(configuration: Configuration): Int {
+    val screenWidth = configuration.screenWidthDp
+    return (screenWidth * 0.25).toInt()
 }
 
 @InternalCoroutinesApi
 @ExperimentalPagerApi
 @Composable
-@Preview
-fun TimerPickerPreview() {
+@Preview(widthDp = 320)
+fun TimerPickerPreviewWide() {
+    TimerPicker()
+}
+
+@InternalCoroutinesApi
+@ExperimentalPagerApi
+@Composable
+@Preview(widthDp = 240)
+fun TimerPickerPreviewThin() {
     TimerPicker()
 }
 
