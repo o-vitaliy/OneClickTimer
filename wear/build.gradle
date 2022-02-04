@@ -67,5 +67,14 @@ dependencies {
     implementation 'androidx.wear:wear:1.2.0'
     compileOnly 'com.google.android.wearable:wearable:2.8.1'
     implementation "com.google.dagger:hilt-android:2.38.1"
+
+    // Use to implement support for wear tiles
+    implementation "androidx.wear.tiles:tiles:1.0.0"
+
+    // Use to preview wear tiles in your own app
+    debugImplementation "androidx.wear.tiles:tiles-renderer:1.0.0"
+
+    implementation("com.google.guava:guava:31.0.1-android")
+
     kapt "com.google.dagger:hilt-compiler:2.38.1"
 }

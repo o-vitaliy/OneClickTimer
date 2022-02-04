@@ -4,11 +4,13 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.os.*
+import android.view.View
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
+import ru.ovi.oneclicktimer.ui.timerpicker.TIME_SLOTS
 import ru.ovi.oneclicktimer.ui.utils.timerFormat
 import ru.ovi.shared.R
 
@@ -33,14 +35,14 @@ class TimerService : Service() {
             }
             intent?.hasExtra(ACTION_STOP) == true -> {
                 stopTimer()
-                createNotification()
+                createNotification(false, duration)
             }
             else -> {
                 if (intent?.hasExtra(DURATION) == true) {
                     duration = intent.getLongExtra(DURATION, DEFAULT_TIMER)
                 }
                 startTimer()
-                startForeground(NOTIFICATION_ID, createNotification(duration))
+                startForeground(NOTIFICATION_ID, createNotification(true, duration))
             }
         }
 
@@ -51,10 +53,10 @@ class TimerService : Service() {
         timerRunner = TimerRunner(duration).also {
             timerScope.launch {
                 it.secondsTick.collect {
-                    notificationManager.notify(NOTIFICATION_ID, createNotification(it))
+                    notificationManager.notify(NOTIFICATION_ID, createNotification(true, it))
                 }
                 vibrateDevice()
-                notificationManager.notify(NOTIFICATION_ID, createNotification())
+                notificationManager.notify(NOTIFICATION_ID, createNotification(false, duration))
             }
         }
     }
@@ -77,34 +79,59 @@ class TimerService : Service() {
         super.onDestroy()
     }
 
-    private fun createNotification(duration: Long? = null): Notification {
+    private fun createNotification(running: Boolean, duration: Long): Notification {
         val remoteView = RemoteViews(packageName, R.layout.notification_timer_control)
 
         remoteView.setOnClickPendingIntent(R.id.cancelButton, cancelIntent())
 
-        if (duration != null) {
+        if (running) {
             remoteView.setTextViewText(
                 R.id.timerTitle,
                 "Timer is running: ${timerFormat(duration)}"
             )
 
-            remoteView.setTextViewText(R.id.actionButtonTitle, "Stop")
-            remoteView.setImageViewResource(
-                R.id.actionButtonImage,
-                R.drawable.ic_baseline_stop_circle_24
+            remoteView.setTextViewText(R.id.actionButton, "Stop")
+            remoteView.setTextViewCompoundDrawablesRelative(
+                R.id.actionButton,
+                R.drawable.ic_baseline_stop_circle_24, 0, 0, 0
             )
 
             remoteView.setOnClickPendingIntent(R.id.actionButton, stopIntent())
+
+            remoteView.setViewVisibility(R.id.actionButtonPrev, View.INVISIBLE)
+            remoteView.setViewVisibility(R.id.actionButtonNext, View.INVISIBLE)
         } else {
             remoteView.setTextViewText(R.id.timerTitle, "Time expired")
 
-            remoteView.setTextViewText(R.id.actionButtonTitle, "Start")
-            remoteView.setImageViewResource(
-                R.id.actionButtonImage,
-                R.drawable.ic_baseline_play_circle_filled_24
+            remoteView.setViewVisibility(R.id.actionButtonPrev, View.VISIBLE)
+            remoteView.setViewVisibility(R.id.actionButtonNext, View.VISIBLE)
+
+            remoteView.setTextViewText(R.id.actionButton, "Start ${timerFormat(duration)}")
+            remoteView.setTextViewCompoundDrawablesRelative(
+                R.id.actionButton,
+                R.drawable.ic_baseline_play_circle_filled_24, 0, 0, 0
             )
 
-            remoteView.setOnClickPendingIntent(R.id.actionButton, startIntent())
+            remoteView.setOnClickPendingIntent(R.id.actionButton, startIntent(duration))
+
+            val index = TIME_SLOTS.indexOf(duration)
+            if (index == 0) {
+                remoteView.setBoolean(R.id.actionButtonPrev, "setEnabled", false)
+            } else {
+                remoteView.setBoolean(R.id.actionButtonPrev, "setEnabled", true)
+                val prevDuration = TIME_SLOTS[index - 1]
+                remoteView.setTextViewText(R.id.actionButtonPrev, timerFormat(prevDuration))
+                remoteView.setOnClickPendingIntent(R.id.actionButtonPrev, startIntent(prevDuration))
+            }
+
+            if (index == TIME_SLOTS.size - 1) {
+                remoteView.setBoolean(R.id.actionButtonNext, "setEnabled", false)
+            } else {
+                remoteView.setBoolean(R.id.actionButtonNext, "setEnabled", true)
+                val nextDuration = TIME_SLOTS[index + 1]
+                remoteView.setTextViewText(R.id.actionButtonNext, timerFormat(nextDuration))
+                remoteView.setOnClickPendingIntent(R.id.actionButtonNext, startIntent(nextDuration))
+            }
         }
 
 
@@ -114,9 +141,14 @@ class TimerService : Service() {
             ""
         }
 
+        val timerIcon =
+            if (running) R.drawable.ic_baseline_timer_24
+            else R.drawable.ic_baseline_timer_off_24
+
         val builder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_baseline_timer_24)
+            .setSmallIcon(timerIcon)
             .setContent(remoteView)
+            .setOngoing(true)
 
         val resultIntent = Intent(Intent.ACTION_MAIN)
             .setPackage(packageName)
@@ -133,7 +165,7 @@ class TimerService : Service() {
         val channelId = "oneckicktimer"
         val channel = NotificationChannel(
             channelId, "timer_service",
-            NotificationManager.IMPORTANCE_DEFAULT,
+            NotificationManager.IMPORTANCE_LOW,
         )
         notificationManager.createNotificationChannel(channel)
         return channelId
@@ -151,9 +183,11 @@ class TimerService : Service() {
         PendingIntent.FLAG_UPDATE_CURRENT
     )
 
-    private fun startIntent() = PendingIntent.getService(
-        this, 3,
-        Intent(this, TimerService::class.java).putExtra(ACTION_START, true),
+    private fun startIntent(duration: Long) = PendingIntent.getService(
+        this, 3 + duration.toInt(),
+        Intent(this, TimerService::class.java)
+            .putExtra(ACTION_START, true)
+            .putExtra(DURATION, duration),
         PendingIntent.FLAG_UPDATE_CURRENT
     )
 
@@ -164,7 +198,7 @@ class TimerService : Service() {
                 it.vibrate(
                     VibrationEffect.createOneShot(
                         VIBRATION_DURATION,
-                        VibrationEffect.DEFAULT_AMPLITUDE
+                        255
                     )
                 )
             } else {
@@ -184,6 +218,6 @@ class TimerService : Service() {
         private const val ACTION_START = "ACTION_START"
         private const val ACTION_CANCEL = "ACTION_CANCEL"
 
-        private const val VIBRATION_DURATION = 200L
+        private const val VIBRATION_DURATION = 300L
     }
 }

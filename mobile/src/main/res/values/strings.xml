@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">OneClickTimer</string>
-    <string name="title_activity_timer">TimerActivity</string>
+    <string name="title_activity_timer">OneClickTimer</string>
 </resources>
