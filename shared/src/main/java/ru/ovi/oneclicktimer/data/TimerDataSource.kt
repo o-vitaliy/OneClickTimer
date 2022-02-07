@@ -1,23 +1,20 @@
 package ru.ovi.oneclicktimer.data
 
-import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
-import dagger.hilt.android.scopes.ActivityRetainedScoped
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import ru.ovi.oneclicktimer.ui.service.TimerService
 import java.lang.ref.WeakReference
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.coroutines.resume
 
-@ActivityRetainedScoped
+@Singleton
 class TimerDataSource @Inject constructor(private val activity: Application) {
 
     private var service: TimerService? = null

@@ -12,6 +12,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import ru.ovi.oneclicktimer.ui.timerpicker.TIME_SLOTS
 import ru.ovi.oneclicktimer.ui.utils.timerFormat
+import ru.ovi.oneclicktimer.ui.utils.timerFormatShort
 import ru.ovi.shared.R
 
 class TimerService : Service() {
@@ -120,7 +121,7 @@ class TimerService : Service() {
             } else {
                 remoteView.setBoolean(R.id.actionButtonPrev, "setEnabled", true)
                 val prevDuration = TIME_SLOTS[index - 1]
-                remoteView.setTextViewText(R.id.actionButtonPrev, timerFormat(prevDuration))
+                remoteView.setTextViewText(R.id.actionButtonPrev, timerFormatShort(prevDuration))
                 remoteView.setOnClickPendingIntent(R.id.actionButtonPrev, startIntent(prevDuration))
             }
 
@@ -129,7 +130,7 @@ class TimerService : Service() {
             } else {
                 remoteView.setBoolean(R.id.actionButtonNext, "setEnabled", true)
                 val nextDuration = TIME_SLOTS[index + 1]
-                remoteView.setTextViewText(R.id.actionButtonNext, timerFormat(nextDuration))
+                remoteView.setTextViewText(R.id.actionButtonNext, timerFormatShort(nextDuration))
                 remoteView.setOnClickPendingIntent(R.id.actionButtonNext, startIntent(nextDuration))
             }
         }
@@ -150,13 +151,15 @@ class TimerService : Service() {
             .setContent(remoteView)
             .setOngoing(true)
 
-        val resultIntent = Intent(Intent.ACTION_MAIN)
-            .setPackage(packageName)
+        val resultIntent = Intent(Intent.ACTION_MAIN).setPackage(packageName)
         val resultPendingIntent = PendingIntent.getActivity(
             this, 0, resultIntent,
             PendingIntent.FLAG_UPDATE_CURRENT
         )
         builder.setContentIntent(resultPendingIntent)
+
+        remoteView.setOnClickPendingIntent(R.id.container, resultPendingIntent)
+
         return builder.build()
     }
 
